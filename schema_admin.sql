@@ -10,6 +10,11 @@ create table if not exists public.admins (
 
 alter table public.admins enable row level security;
 
+-- 로그인 사용자가 admins 를 '읽을 수 있어야' 다른 테이블의 관리자 정책
+-- (exists(select from admins ...)) 서브쿼리가 동작한다. GRANT 없으면 profiles/
+-- user_state 접근이 전부 'permission denied for table admins' 로 막힌다.
+grant select on public.admins to authenticated;
+
 -- 본인이 admin 인지 확인할 수 있게 자기 행 조회 허용(정책 서브쿼리에 필요).
 drop policy if exists "admins read self" on public.admins;
 create policy "admins read self"
