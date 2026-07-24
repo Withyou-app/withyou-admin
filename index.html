@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>withyou+ 관리자</title>
+<style>
+  :root{
+    --cream:#FFF9F2; --card:#FFFFFF; --coral:#FF8E88; --coral-d:#F07D76;
+    --ink:#321D10; --muted:#8B7B6E; --line:#EFE4D8; --fill:#F4E9DC;
+    --green:#3BA55D; --amber:#E8A33D; --red:#E5484D;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,'Malgun Gothic',sans-serif;
+       background:var(--cream);color:var(--ink);}
+  a{color:var(--coral-d)}
+  .wrap{max-width:1100px;margin:0 auto;padding:24px 20px 60px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:22px}
+  .brand .dot{width:16px;height:16px;border-radius:50% 50% 50% 0;background:var(--coral);transform:rotate(-45deg)}
+  .muted{color:var(--muted)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+  .btn{background:var(--coral);color:#fff;border:none;border-radius:12px;padding:12px 18px;
+       font-weight:700;font-size:15px;cursor:pointer}
+  .btn:hover{background:var(--coral-d)}
+  .btn.ghost{background:transparent;color:var(--coral-d);border:1px solid var(--coral)}
+  label{display:block;font-weight:700;font-size:13px;margin:14px 0 6px}
+  input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;
+        background:var(--fill);font-size:14px;color:var(--ink)}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .row>*{flex:1;min-width:200px}
+  .hidden{display:none!important}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin:18px 0}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+  .stat .n{font-size:30px;font-weight:800}
+  .stat .l{color:var(--muted);font-size:13px;margin-top:4px}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 16px}
+  .tab{padding:9px 16px;border-radius:999px;background:var(--fill);border:none;cursor:pointer;
+       font-weight:700;font-size:14px;color:var(--muted)}
+  .tab.active{background:var(--coral);color:#fff}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+  .tablewrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:16px}
+  .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:700}
+  .pill.low{background:#E7F6ec;color:var(--green)}
+  .pill.medium{background:#FDF1DF;color:var(--amber)}
+  .pill.high{background:#FBE3E4;color:var(--red)}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+  .err{color:var(--red);font-size:14px;margin-top:10px;white-space:pre-wrap}
+  .hint{background:var(--fill);border-radius:12px;padding:14px;font-size:13px;color:var(--muted);margin-top:14px}
+  code{background:var(--fill);padding:1px 6px;border-radius:6px}
+  .emos span{display:inline-block;background:var(--fill);border-radius:999px;padding:1px 9px;margin:2px 3px 0 0;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span> withyou+ 관리자</div>
+    <button id="logout" class="btn ghost hidden" onclick="logout()">로그아웃</button>
+  </div>
+
+  <!-- 설정 / 로그인 -->
+  <section id="setup" class="card">
+    <h2 style="margin-top:0">연결 설정</h2>
+    <p class="muted" style="margin-top:4px">Supabase 프로젝트에 연결해 관리자로 로그인하세요.
+      값은 이 브라우저에만 저장됩니다.</p>
+    <div class="row">
+      <div><label>Supabase URL</label><input id="url" placeholder="https://xxxx.supabase.co"></div>
+      <div><label>anon public key</label><input id="key" placeholder="eyJhbGciOi..."></div>
+    </div>
+    <div class="row">
+      <div><label>관리자 이메일</label><input id="email" type="email" placeholder="admin@example.com"></div>
+      <div><label>비밀번호</label><input id="pw" type="password" placeholder="••••••••"></div>
+    </div>
+    <div style="margin-top:18px"><button class="btn" onclick="login()">로그인</button></div>
+    <div id="setupErr" class="err"></div>
+    <div class="hint">
+      관리자 계정은 Supabase Auth 사용자여야 하며, <code>admins</code> 테이블에 등록돼 있어야
+      모든 사용자 데이터를 볼 수 있습니다. 설정 방법은 레포의 <code>README.md</code> 참고.
+    </div>
+  </section>
+
+  <!-- 대시보드 -->
+  <section id="dash" class="hidden">
+    <div class="stats" id="stats"></div>
+    <div class="tabs">
+      <button class="tab active" data-t="users" onclick="switchTab('users')">사용자</button>
+      <button class="tab" data-t="reports" onclick="switchTab('reports')">마음 리포트</button>
+      <button class="tab" data-t="chats" onclick="switchTab('chats')">대화</button>
+      <button class="tab" data-t="safety" onclick="switchTab('safety')">안전 로그</button>
+    </div>
+    <div id="err" class="err"></div>
+    <div class="tablewrap"><div id="content" style="padding:4px"></div></div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+let sb=null, data={profiles:[],state:[]};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// 저장된 설정 복원
+window.addEventListener('load',()=>{
+  $('url').value=localStorage.getItem('wy_url')||'';
+  $('key').value=localStorage.getItem('wy_key')||'';
+  $('email').value=localStorage.getItem('wy_email')||'';
+  if($('url').value && $('key').value){ tryResume(); }
+});
+
+function makeClient(){
+  const url=$('url').value.trim(), key=$('key').value.trim();
+  if(!url||!key) throw new Error('Supabase URL 과 anon key 를 입력하세요.');
+  sb=supabase.createClient(url,key);
+  localStorage.setItem('wy_url',url); localStorage.setItem('wy_key',key);
+}
+
+async function tryResume(){
+  try{ makeClient(); const {data:{session}}=await sb.auth.getSession();
+    if(session){ await loadAll(); } }catch(e){}
+}
+
+async function login(){
+  $('setupErr').textContent='';
+  try{
+    makeClient();
+    const email=$('email').value.trim(), password=$('pw').value;
+    const {error}=await sb.auth.signInWithPassword({email,password});
+    if(error) throw error;
+    localStorage.setItem('wy_email',email);
+    await loadAll();
+  }catch(e){ $('setupErr').textContent='로그인 실패: '+(e.message||e); }
+}
+
+async function logout(){ try{await sb.auth.signOut();}catch(e){}
+  $('dash').classList.add('hidden'); $('setup').classList.remove('hidden');
+  $('logout').classList.add('hidden'); }
+
+async function loadAll(){
+  $('err').textContent='';
+  try{
+    const p=await sb.from('profiles').select('*').order('updated_at',{ascending:false});
+    if(p.error) throw p.error;
+    const s=await sb.from('user_state').select('user_id,key,value,updated_at');
+    if(s.error) throw s.error;
+    data.profiles=p.data||[]; data.state=s.data||[];
+    $('setup').classList.add('hidden'); $('dash').classList.remove('hidden');
+    $('logout').classList.remove('hidden');
+    renderStats(); switchTab('users');
+  }catch(e){
+    $('dash').classList.remove('hidden'); $('setup').classList.add('hidden');
+    $('logout').classList.remove('hidden');
+    $('err').textContent='데이터 조회 실패: '+(e.message||e)+
+      '\n관리자 권한(admins 테이블 등록)과 RLS 정책을 확인하세요.';
+  }
+}
+
+const nameOf=uid=>{const u=data.profiles.find(p=>p.id===uid);return u?(u.name||u.email||uid):uid;};
+const stateFor=key=>data.state.filter(r=>r.key===key);
+
+function renderStats(){
+  const users=data.profiles.length;
+  const reports=stateFor('mind_reports').reduce((n,r)=>n+((r.value||[]).length),0);
+  const chats=stateFor('chat_conversations').reduce((n,r)=>n+Object.keys(r.value||{}).length,0);
+  let high=0,med=0;
+  stateFor('safety_logs').forEach(r=>(r.value||[]).forEach(l=>{
+    if(l.level==='high')high++; else if(l.level==='medium')med++;}));
+  const card=(n,l,c)=>`<div class="stat"><div class="n" style="color:${c||'var(--ink)'}">${n}</div><div class="l">${l}</div></div>`;
+  $('stats').innerHTML=card(users,'가입 사용자')+card(reports,'마음 리포트')+
+    card(chats,'진행 중 대화')+card(high,'위험(High) 로그',high?'var(--red)':'var(--ink)')+
+    card(med,'주의(Medium) 로그',med?'var(--amber)':'var(--ink)');
+}
+
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.t===t));
+  if(t==='users')renderUsers();
+  else if(t==='reports')renderReports();
+  else if(t==='chats')renderChats();
+  else renderSafety();
+}
+
+function table(head,rows){
+  if(!rows.length) return '<div style="padding:24px" class="muted">데이터가 없습니다.</div>';
+  return '<table><thead><tr>'+head.map(h=>`<th>${h}</th>`).join('')+
+    '</tr></thead><tbody>'+rows.join('')+'</tbody></table>';
+}
+
+function renderUsers(){
+  const rows=data.profiles.map(u=>`<tr>
+    <td>${esc(u.name)||'<span class="muted">-</span>'}</td>
+    <td>${esc(u.email)}</td>
+    <td>${esc(u.humor)||'<span class="muted">-</span>'}</td>
+    <td>${u.marketing?'✅':'—'}</td>
+    <td class="muted">${esc((u.updated_at||'').replace('T',' ').slice(0,16))}</td></tr>`);
+  $('content').innerHTML=table(['호칭','이메일','유머취향','마케팅','업데이트'],rows);
+}
+
+function renderReports(){
+  const rows=[];
+  stateFor('mind_reports').forEach(r=>{(r.value||[]).forEach(rep=>{
+    const emo=(rep.emotions||[]).map(e=>`<span>${esc(e)}</span>`).join('');
+    rows.push(`<tr>
+      <td>${esc(nameOf(r.user_id))}</td>
+      <td>${esc(rep.persona)}</td>
+      <td class="emos">${emo}</td>
+      <td>${esc(rep.summary)}</td>
+      <td class="muted">${esc(rep.createdAt)}</td></tr>`);
+  });});
+  rows.sort();
+  $('content').innerHTML=table(['사용자','페르소나','감정','요약','생성'],rows);
+}
+
+function renderChats(){
+  const rows=[];
+  stateFor('chat_conversations').forEach(r=>{
+    const conv=r.value||{};
+    Object.keys(conv).forEach(persona=>{
+      const msgs=conv[persona]||[];
+      const last=[...msgs].reverse().find(m=>!m.gift);
+      rows.push(`<tr>
+        <td>${esc(nameOf(r.user_id))}</td>
+        <td>${esc(persona)}</td>
+        <td>${msgs.length}</td>
+        <td>${esc((last&&last.text)||'')}</td></tr>`);
+    });
+  });
+  $('content').innerHTML=table(['사용자','페르소나','메시지 수','마지막 메시지'],rows);
+}
+
+function renderSafety(){
+  const rows=[];
+  stateFor('safety_logs').forEach(r=>{(r.value||[]).forEach(l=>{
+    rows.push({u:nameOf(r.user_id),l});
+  });});
+  rows.sort((a,b)=>String(b.l.at).localeCompare(String(a.l.at)));
+  const html=rows.map(x=>`<tr>
+    <td><span class="pill ${esc(x.l.level)}">${x.l.level==='high'?'위험':'주의'}</span></td>
+    <td>${esc(x.u)}</td>
+    <td>${esc(x.l.action)}</td>
+    <td class="muted">${esc(x.l.at)}</td></tr>`);
+  $('content').innerHTML=table(['위험도','사용자','조치','시각'],html);
+}
+</script>
+</body>
+</html>
