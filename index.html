@@ -233,13 +233,23 @@ function renderSafety(){
     rows.push({u:nameOf(r.user_id),l});
   });});
   rows.sort((a,b)=>String(b.l.at).localeCompare(String(a.l.at)));
-  const html=rows.map(x=>`<tr>
-    <td><span class="pill ${esc(x.l.level)}">${x.l.level==='high'?'위험':'주의'}</span></td>
-    <td>${esc(x.u)}</td>
-    <td>${esc(x.l.action)}</td>
-    <td class="muted">${esc(x.l.at)}</td></tr>`);
-  $('content').innerHTML=table(['위험도','사용자','조치','시각'],html);
+  const html=[];
+  rows.forEach((x,i)=>{
+    const t=x.l.text||'';
+    const short=t.length>16 ? esc(t.slice(0,16))+'…' : (esc(t)||'<span class="muted">-</span>');
+    html.push(`<tr>
+      <td><span class="pill ${esc(x.l.level)}">${x.l.level==='high'?'위험':'주의'}</span></td>
+      <td>${esc(x.u)}</td>
+      <td>${esc(x.l.action)}</td>
+      <td>${short}</td>
+      <td class="muted">${esc(x.l.at)}</td>
+      <td>${t?`<button class="tab" style="padding:4px 12px;font-size:12px" onclick="toggleDetail(${i})">자세히</button>`:''}</td></tr>`);
+    html.push(`<tr id="sd${i}" class="hidden"><td colspan="6" style="background:var(--fill)">
+      <div style="padding:4px 2px"><b>촉발 문장</b><br>${esc(t)}</div></td></tr>`);
+  });
+  $('content').innerHTML=table(['위험도','사용자','조치','문장','시각',''],html);
 }
+function toggleDetail(i){ const e=document.getElementById('sd'+i); if(e) e.classList.toggle('hidden'); }
 </script>
 </body>
 </html>
