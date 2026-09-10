@@ -1,0 +1,13 @@
+# 비밀정보 — 실제 자격증명이 들어가므로 커밋 금지 (.env.example 은 커밋 가능)
+.env
+
+# OMC 작업 산출물(스크린샷/로그/상태)
+.omc/
+
+# IntelliJ / IDE
+.idea/
+*.iml
+
+# Misc
+*.log
+.DS_Store
